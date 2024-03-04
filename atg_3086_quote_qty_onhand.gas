@@ -1,0 +1,86 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: Mitch Atchley
+'Project Start Date: 10/18/2010
+'Hooks:
+'Other Components:
+'Notes:
+F.Intrinsic.Control.CallSub(Save)
+
+Program.Sub.Main.End
+
+Program.Sub.Save.Start
+F.Intrinsic.Control.SetErrorHandler("Save_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sPart.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.sQty.Declare(Float)
+V.Local.sQuote.Declare(String)
+V.Local.sLine.Declare(String)
+
+Function.Intrinsic.Control.SetErrorHandler("Save_Err")
+Function.Intrinsic.Control.ClearErrors
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.Control.If(V.Caller.Switches,<>,"D")
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Local.sPart)
+	F.Intrinsic.String.Concat("Select PART, QTY_ONHAND from INVENTORY_MSTR where PART = '",V.Local.sPart,"'",V.Local.sSql)
+	F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.sSql)
+	F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"False")
+		V.Local.sQty.Set(V.ODBC.con!rst.FieldValFloat!QTY_ONHAND)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.CallSub(Unload)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rst.Close
+	F.Intrinsic.String.LPad(V.Passed.000060,0,7,V.Local.sQuote)
+	F.Intrinsic.Math.Mult(V.Passed.000051,10,V.Local.sLine)
+	F.Intrinsic.String.LPad(V.Local.sLine,0,4,V.Local.sLine)
+	F.Intrinsic.String.Concat("Select * From ATG_3086_QUOTE_QTY_ONHAND where QUOTE = '",V.Local.sQuote,"' and RECORD_NO = '",V.Local.sLine,"'",V.Local.sSql)
+	F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+	F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,"True")
+		F.ODBC.con!rst.AddNew
+		F.ODBC.con!rst.Set!QUOTE(V.Local.sQuote)
+		F.ODBC.con!rst.Set!RECORD_NO(V.Local.sLine)
+		F.ODBC.con!rst.Set!PART(V.Local.sPart)
+		F.ODBC.con!rst.Set!QTY_ONHAND(V.Local.sQty)
+		F.ODBC.con!rst.Update
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Concat("Update ATG_3086_QUOTE_QTY_ONHAND set PART = '",V.Local.sPart,"', QTY_ONHAND = '",V.Local.sQty,"' where QUOTE = '",V.Local.sQuote,"' and RECORD_NO = '",V.Local.sLine,"'",V.Local.sSql)
+		F.ODBC.Connection!con.Execute(V.Local.sSql)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rst.Close
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.CallSub(Unload)
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Save_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: atg_3086_quote_qty_onhand.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Save.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+
+Program.Sub.Unload.End
+
+
